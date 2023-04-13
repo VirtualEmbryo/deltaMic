@@ -1,0 +1,6 @@
+numpy>=1.21.6' 
+torch>=1.13.1'
+largesteps>=0.2.1'
+robust_laplacian>=0.2.2'
+scipy>=1.5.4
+trimesh>=3.10.2

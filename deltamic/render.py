@@ -349,3 +349,19 @@ def compute_spatial_frequency_grid(box_shape,box_size,device = 'cpu',dtype = tor
     Kn2 = 2*K2-nn2
     xi2 = Kn2*s2
     return(xi0,xi1,xi2)
+
+
+def center_verts_in_box(verts, box_size, offset= 0.4):
+    box_size = np.array(box_size)
+
+    extent_verts = verts.max(axis=0) - verts.min(axis=0)
+    extent_box = box_size[:,1]-box_size[:,0]
+    verts*=min(extent_box/extent_verts)
+    verts*=1-offset
+
+    extent_verts = verts.max(axis=0) - verts.min(axis=0)
+
+    displacement = 0.5 * (extent_box-extent_verts)
+    verts+= box_size[:,1]-verts.max(axis=0)-displacement
+    verts.max(axis=0),verts.min(axis=0)
+    return(verts)

@@ -1,6 +1,8 @@
 # deltaMic
 **deltaMic** is a PyTorch-based python library that provides a differentiable renderer of microscopy images. We compute Fourier transform of triangle meshes in a given box, and multiply it with a given Point-Spread-Function in the Fourier space. We support operations both on CPU and GPU. We provide **C++/CUDA** bindings to compute efficiently the forward and backward passes, to enable differentiable rasterization of triangulated data at scale. 
 
+<img src="inverse_rendering.pdf" alt="drawing" style="background-color: transparent;" width="900"/>
+
 
 Our main contribution, that allows meshFT to compute transforms in tractable times, relies on a tunable narrow-band filter in the frequency space that avoid computing high frequencies of the Fourier transform. (see API). We use our pipeline to do inverse rendering on 3D microscopy images. 
 

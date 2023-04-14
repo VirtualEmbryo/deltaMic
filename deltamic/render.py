@@ -32,7 +32,7 @@ def get_internal_triangle_and_mesh_areas_with_coeff(Verts,Faces,Faces_coeff):
     meshar = torch.sum(trisar)
     return(trisar,meshar)
 
-def MeshFTPy(Verts,Faces,Faces_coeff,xi0, xi1, xi2, FTpsf, narrowband_thresh):
+def MeshFTPy(Verts,Faces,Faces_coeff,xi0, xi1, xi2, OTF, narrowband_thresh):
     #This is the real surrogate of our torch function in python.
     
     trisar,meshar = get_internal_triangle_and_mesh_areas_with_coeff(Verts,Faces,Faces_coeff)
@@ -44,7 +44,7 @@ def MeshFTPy(Verts,Faces,Faces_coeff,xi0, xi1, xi2, FTpsf, narrowband_thresh):
     v1 = Faces[:,1]
     v2 = Faces[:,2]
 
-    boolean_grid = torch.abs(FTpsf)>narrowband_thresh
+    boolean_grid = torch.abs(OTF)>narrowband_thresh
 
     Gridxi0, Gridxi1, Gridxi2 = torch.meshgrid(xi0,xi1,xi2,indexing = 'ij')
     Gridxi0 = Gridxi0.to(xi0.device)
@@ -105,7 +105,7 @@ def MeshFTPy(Verts,Faces,Faces_coeff,xi0, xi1, xi2, FTpsf, narrowband_thresh):
 
     ftmesh = torch.complex(torch.zeros_like(Gridxi0),torch.zeros_like(Gridxi0))
     trisar_complex = torch.complex(trisar,torch.zeros_like(trisar))
-    ftmesh[torch.abs(FTpsf)>narrowband_thresh] = Grid_results@(trisar_complex)
+    ftmesh[torch.abs(OTF)>narrowband_thresh] = Grid_results@(trisar_complex)
     return(ftmesh)
 
 
@@ -114,7 +114,7 @@ class Fourier3dMesh(nn.Module):
     """
     Module for the meshFT layer. Takes in a triangle mesh and returns a fourier transform.
     """
-    def __init__(self, box_size,box_shape,device = 'cpu', dtype = torch.float, narrowband_thresh = 0.01):
+    def __init__(self, box_size,box_shape,device = 'cpu', dtype = torch.float,OTF = None, narrowband_thresh = 0.01):
         """
         box_size: [[x_min,xmax],[y_min,y_max],[z_min,z_max]] Size of the box (in the spatial dimensions of the mesh)
         box_shape: [x_res,y_res,z_res] Size of the fourier box (in voxels)
@@ -127,7 +127,10 @@ class Fourier3dMesh(nn.Module):
         self.device = device
         self.xi0,self.xi1,self.xi2 = self._compute_spatial_frequency_grid()
         
-        self.OTF = torch.ones(self.box_shape, device = device, dtype = dtype)
+        if OTF == None: 
+            self.OTF = torch.ones(self.box_shape, device = device, dtype = dtype)
+        else: 
+            self.OTF = OTF
         self.narrowband_thresh = narrowband_thresh
         
     def forward(self, Verts,Faces, Faces_coeff):
@@ -179,9 +182,9 @@ class Fourier3dMesh(nn.Module):
 
 
 
-def render_image_from_ftmesh(ftmesh,ftpsf,image_shape):
-    ftexp = ftmesh*ftpsf
-    image_ft = torch.abs(torch.fft.ifftn(ftexp, list(image_shape)))
+def render_image_from_ftmesh(ftmesh,OTF,box_shape):
+    ftexp = ftmesh*OTF
+    image_ft = torch.abs(torch.fft.ifftn(ftexp, list(box_shape)))
     return(image_ft)
 
 
@@ -236,7 +239,7 @@ def compute_volume_manifold(Verts,Faces):
     Vol = -torch.sum(dots)/6
     return(Vol)
 
-def fourier_from_mesh_narrowband_autofluorescence(ftpsf, narrowband_thresh,regint, xi0, xi1, xi2, Verts, Faces):
+def fourier_from_mesh_narrowband_autofluorescence(OTF, narrowband_thresh,regint, xi0, xi1, xi2, Verts, Faces):
     trisar,meshar,nor = get_internal_triangle_and_mesh_areas_and_normals(Verts,Faces)
 
     regvol = compute_volume_manifold(Verts,Faces)
@@ -251,7 +254,7 @@ def fourier_from_mesh_narrowband_autofluorescence(ftpsf, narrowband_thresh,regin
     v1 = Faces[:,1]
     v2 = Faces[:,2]
 
-    boolean_grid = ftpsf>narrowband_thresh
+    boolean_grid = OTF>narrowband_thresh
 
     Gridxi0, Gridxi1, Gridxi2 = torch.meshgrid(xi0,xi1,xi2,indexing = 'ij')
     Gridxi0 = Gridxi0.to(xi0.device)
@@ -327,7 +330,7 @@ def fourier_from_mesh_narrowband_autofluorescence(ftpsf, narrowband_thresh,regin
     Grid_results[R5] = emixia[R5]/(xiab[R5]*xica[R5])+emixib[R5]/(xibc[R5]*xiab[R5])+emixic[R5]/(xica[R5]*xibc[R5])
     
     ftmesh = torch.complex(torch.zeros_like(Gridxi0),torch.zeros_like(Gridxi0))
-    ftmesh[ftpsf>narrowband_thresh] = torch.sum(Grid_results*Phase_matrix,axis=1)
+    ftmesh[OTF>narrowband_thresh] = torch.sum(Grid_results*Phase_matrix,axis=1)
     return(ftmesh)
 def compute_spatial_frequency_grid(box_shape,box_size,device = 'cpu',dtype = torch.float): 
     n0,n1,n2 = box_shape

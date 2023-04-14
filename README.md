@@ -14,7 +14,7 @@ Our main contribution, that allows meshFT to compute transforms in tractable tim
 
 ### Example 
 
-Load a mesh and render a microscopy image from it
+Load a mesh and render a microscopy image from it:
 ```py
 from deltamic import normalize_tensor,render_image_from_ftmesh,Fourier3dMesh,compute_box_size,generate_gaussian_psf
 import trimesh
@@ -62,7 +62,7 @@ v = napari.view_image(image_ft.detach().cpu().numpy())
 ### API and Documentation
 
 #### Fourier_transform
-First we need to build our function 
+First we need to build our torch.nn function:
 - `class Fourier3dMesh(self, box_size,box_shape,device = 'cpu', dtype = torch.float,OTF=None narrowband_thresh = 0.01)`: 
     - `box_shape: [x_res,y_res,z_res]` Size of the Fourier transform box (in voxels)
     - `box_size:[[x_min,xmax],[y_min,y_max],[z_min,z_max]]` Dimensions of the box (in the spatial dimensions of the mesh)
@@ -80,7 +80,7 @@ Differentiable parameters of PSFs models can be conveniently obtained with the m
 
 
 #### Rendering
-Our rendering function takes the Fourier transform of the mesh `ftmesh` and the optical transfer function `OTF` and returns an image of size `box_shape`
+Our rendering function takes the Fourier transform of the mesh `ftmesh` and the optical transfer function `OTF` and returns an image of size `box_shape`.
 
 - `render_image_from_ftmesh(ftmesh,OTF,box_shape)`:
     - `return image`, a 3D image of size `box_shape`
@@ -88,7 +88,7 @@ Our rendering function takes the Fourier transform of the mesh `ftmesh` and the 
 ---
 
 ### Credits, contact, citations
-If you use this tool, please cite 
+If you use this tool, please cite:
 
 ```
 @misc{ichbiah2023differentiable,

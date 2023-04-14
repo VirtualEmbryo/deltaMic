@@ -81,6 +81,8 @@ We provide differentiable implementations of PSFs. Parameters such as PSF width,
 - `Gaussian_psf(self, box_shape,box_size,sigma=1, device = 'cpu')`: Implements a differentiable gaussian PSF
 - `Gibson_Lanni_psf(self,box_shape, device = 'cpu', **kwargs)`: Implements a differentiable Gibson-Lanni PSF
 - `Hanser_psf(self,box_shape,xi0,xi1,xi2, device = 'cpu', **kwargs)`: Implements a differentiable single-objective PSF by computing the pupil function
+Differentiable parameters of PSFs models can be conveniently obtained with the method `model.parameters()`
+
 
 #### Rendering
 Our rendering function takes the Fourier transform of the mesh `ftmesh` and the optical transfer function `OTF` and returns an image of size `box_shape`

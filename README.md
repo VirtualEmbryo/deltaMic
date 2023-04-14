@@ -4,23 +4,17 @@
 <img src="inverse_rendering.png" alt="drawing" style="background-color: transparent;" width="900"/>
 
 
-Our main contribution, that allows meshFT to compute transforms in tractable times, relies on a tunable narrow-band filter in the frequency space that avoid computing high frequencies of the Fourier transform. (see API). We use our pipeline to do inverse rendering on 3D microscopy images. 
+Our main contribution, that allows meshFT to compute transforms in tractable times, relies on a tunable narrow-band filter in the frequency space that avoid computing high frequencies of the Fourier transform. (see API). We use our pipeline to do inverse rendering on 3D microscopy images (see [our paper](https://arxiv.org/abs/2303.10440)). 
 
 
 ### Installation
 
-`pip install requirements.txt && python3 setup.py install`
+`pip install -r requirements.txt && python3 setup.py install`
 
 
 ### Example 
 
-Load a mesh and compute its Fourier transform
-
-```shell
-pip install meshFT
-
-```
-
+Load a mesh and render a microscopy image from it
 ```py
 from deltamic import normalize_tensor,render_image_from_ftmesh,Fourier3dMesh,compute_box_size,generate_gaussian_psf
 import trimesh

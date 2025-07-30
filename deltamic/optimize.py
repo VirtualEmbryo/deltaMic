@@ -1,7 +1,7 @@
 import torch
 from largesteps.geometry import compute_matrix
 import robust_laplacian
-import numpy as np 
+import numpy as np
 
 def cot_laplacian(
     verts: torch.Tensor, faces: torch.Tensor, eps: float = 1e-12):
@@ -157,16 +157,15 @@ def mesh_laplacian_smoothing(verts,faces):
     # just treat it as a magic constant matrix that is used to transform
     # verts into normals
     with torch.no_grad():
-        L, inv_areas = robust_laplacian_torch(verts, faces)
+        L, _ = robust_laplacian_torch(verts, faces)
         norm_w = torch.sparse.sum(L, dim=1).to_dense().view(-1, 1)
         idx = norm_w > 0
-        # pyre-fixme[58]: `/` is not supported for operand types `float` and
-        #  `Tensor`.
         norm_w[idx] = 1.0 / norm_w[idx]
         loss = L.mm(verts) * norm_w - verts
     loss = loss.norm(dim=1)
 
     return loss.mean()
+
 
 def robust_laplacian_torch(verts,faces):
     with torch.no_grad():
@@ -187,8 +186,9 @@ def robust_laplacian_torch(verts,faces):
 
         L = torch.sparse.FloatTensor(i, v, torch.Size(shape))
         M = torch.sparse.FloatTensor(i, v, torch.Size(shape))
-    return(L,M)
-    
+    return (L,M)
+
+
 def compute_area_loss(Verts,Faces):
     Pos = Verts[Faces]
     Sides = Pos-Pos[:,[2,0,1]]
@@ -200,19 +200,16 @@ def compute_area_loss(Verts,Faces):
     Diffs[:,1] = Half_perimeters - Lengths_sides[:,1]
     Diffs[:,2] = Half_perimeters - Lengths_sides[:,2]
     Areas = (Half_perimeters*Diffs[:,0]*Diffs[:,1]*Diffs[:,2])**(0.5)
-    return(torch.sum(Areas))
+    return torch.sum(Areas)
 
 
 # 3D version of gradient preconditionning for triangle meshes, adapted from https://github.com/rgl-epfl/large-steps-pytorch
 def compute_precondition_matrix(Verts, Faces, lambda_):
     #We use p = 2
-    M = compute_matrix(Verts, Faces, lambda_) 
+    M = compute_matrix(Verts, Faces, lambda_)
     inv_m = torch.inverse(M.to_dense())
     precondition_matrix = inv_m @ inv_m
-    return(precondition_matrix)
-
-
-
+    return precondition_matrix
 
 
 class VectorAdam(torch.optim.Optimizer):
@@ -247,7 +244,8 @@ class VectorAdam(torch.optim.Optimizer):
                 g1.mul_(b1).add_(grad, alpha=1-b1)
                 if axis is not None:
                     dim = grad.shape[axis]
-                    grad_norm = torch.norm(grad, dim=axis).unsqueeze(axis).repeat_interleave(dim, dim=axis)
+                    grad_norm = torch.norm(grad, dim=axis).unsqueeze(\
+                        axis).repeat_interleave(dim, dim=axis)
                     grad_sq = grad_norm * grad_norm
                     g2.mul_(b2).add_(grad_sq, alpha=1-b2)
                 else:
@@ -257,7 +255,7 @@ class VectorAdam(torch.optim.Optimizer):
                 m2 = g2 / (1-(b2**state["step"]))
                 gr = m1 / (eps + m2.sqrt())
                 p.data.sub_(gr, alpha=lr)
-                
+
 
 def Green_area(Verts, Edges):
     p0 = Verts[Edges[:,0]]
@@ -266,4 +264,3 @@ def Green_area(Verts, Edges):
     dy = p1[:,1]-p0[:,1]
     a= torch.sum(p0[:,1]*dx-p0[:,0]*dy)*2
     return a
-

@@ -4,18 +4,21 @@ from typing import Tuple
 from torch import nn
 from scipy.special import eval_jacobi
 
-from .render import compute_spatial_frequency_grid
 
 def generate_gaussian_psf_from_sigma(sigma, xi0,xi1,xi2):
     sig = -sigma/2
     Gridxi0, Gridxi1, Gridxi2 = torch.meshgrid(xi0,xi1,xi2,indexing = 'ij')
     ems = torch.exp(sig * (Gridxi0**2 + Gridxi1**2+ Gridxi2**2))
-    return(ems)
+    return ems
+
 
 def generate_gaussian_psf(sigma, xi0,xi1,xi2):
     Gridxi0, Gridxi1, Gridxi2 = torch.meshgrid(xi0,xi1,xi2,indexing = 'ij')
-    ems = torch.exp(-(Gridxi0*(sigma[0,0]*Gridxi0+sigma[0,1]*Gridxi1+sigma[0,2]*Gridxi2) + Gridxi1*(sigma[1,0]*Gridxi0+sigma[1,1]*Gridxi1+sigma[1,2]*Gridxi2)+ Gridxi2*(sigma[2,0]*Gridxi0+sigma[2,1]*Gridxi1+sigma[2,2]*Gridxi2))/2)
-    return(ems)
+    ems = torch.exp(-(Gridxi0*(sigma[0,0]*Gridxi0+sigma[0,1]*Gridxi1+sigma[0,2]*Gridxi2) \
+        + Gridxi1*(sigma[1,0]*Gridxi0+sigma[1,1]*Gridxi1+sigma[1,2]*Gridxi2) \
+            + Gridxi2*(sigma[2,0]*Gridxi0+sigma[2,1]*Gridxi1+sigma[2,2]*Gridxi2))/2)
+    return ems
+
 
 class Gibson_Lanni_psf(nn.Module):
     # Torch version of http://kmdouglass.github.io/posts/implementing-a-fast-gibson-lanni-psf-solver-in-python/
@@ -40,13 +43,12 @@ class Gibson_Lanni_psf(nn.Module):
     pZ: microns, particle distance from coverslip
     
     """
-    
-    def __init__(self,box_shape, NA=1.4,M=100., wavelength=0.610, res_lateral= 0.1, res_axial= 0.1, 
+
+    def __init__(self,box_shape, NA=1.4,M=100., wavelength=0.610, res_lateral= 0.1, res_axial= 0.1,
                  ns=1.33, ng0=1.499, ng=1.5, ni0=1.499, ni=1.5, ti0=150, tg0=170, tg=169.99,
-                pZ=2.0, 
-                 min_wavelength = 0.436, num_basis = 100, num_samples = 1000, device = 'cpu'):
+                pZ=2.0, min_wavelength = 0.436, num_basis = 100, num_samples = 1000, device = 'cpu'):
         super().__init__()
-        
+
         self.device = device
         self.NA = self.make_param(NA)
         #self.M = self.make_param(M)
@@ -70,7 +72,8 @@ class Gibson_Lanni_psf(nn.Module):
         self.min_wavelength = min_wavelength
         self.num_basis = num_basis
         self.num_samples = 1000
-        
+
+
     def forward(self):
         
         x0 = (self.size_x - 1) / 2
@@ -99,10 +102,11 @@ class Gibson_Lanni_psf(nn.Module):
         #zv : todo : define it logically with positive and negative bounds
         # I think this is good now
          # Stage displacements away from best focus
-        zv = (self.res_axial * torch.arange(-self.size_z / 2, self.size_z /2, device = self.device) + self.res_axial / 2).type(torch.double)
+        zv = (self.res_axial * torch.arange(-self.size_z / 2, self.size_z /2, device = self.device) \
+            + self.res_axial / 2).type(torch.double)
         #ti = zv.reshape(-1,1) + self.ti0
 
-        #a = NA * zd0 / M # 
+        #a = NA * zd0 / M #
         #a = self.NA * self.zd0 / torch.sqrt(self.M*self.M + self.NA*self.NA) 
         #a = min([NA, ns, ni, ni0, ng, ng0]) / NA
         #I have found the two expressions, do not know which one is the right one.
@@ -113,8 +117,10 @@ class Gibson_Lanni_psf(nn.Module):
         #W= 2 * np.pi / self.wavelength * (OPDs + OPDi + OPDg + OPDt)
 
         OPDs = self.pZ * torch.sqrt((self.ns * self.ns - self.NA * self.NA * rho * rho).clamp(self.Seps)) # OPD in the sample
-        OPDi = (zv.reshape(-1,1) + self.ti0) * torch.sqrt((self.ni * self.ni - self.NA * self.NA * rho * rho).clamp(self.Seps)) - self.ti0 * torch.sqrt((self.ni0 * self.ni0 - self.NA * self.NA * rho * rho).clamp(self.Seps)) # OPD in the immersion medium
-        OPDg = self.tg * torch.sqrt((self.ng * self.ng - self.NA * self.NA * rho * rho).clamp(self.Seps)) - self.tg0 * torch.sqrt((self.ng0 * self.ng0 - self.NA * self.NA * rho * rho).clamp(self.Seps))
+        OPDi = (zv.reshape(-1,1) + self.ti0) * torch.sqrt((self.ni * self.ni - self.NA * self.NA * rho * rho).clamp(self.Seps)) \
+            - self.ti0 * torch.sqrt((self.ni0 * self.ni0 - self.NA * self.NA * rho * rho).clamp(self.Seps)) # OPD in the immersion medium
+        OPDg = self.tg * torch.sqrt((self.ng * self.ng - self.NA * self.NA * rho * rho).clamp(self.Seps)) - self.tg0 \
+            * torch.sqrt((self.ng0 * self.ng0 - self.NA * self.NA * rho * rho).clamp(self.Seps))
         W = 2 * np.pi / self.wavelength * (OPDs + OPDi + OPDg)
 
         # Sample the phase
@@ -128,9 +134,10 @@ class Gibson_Lanni_psf(nn.Module):
         # solution to the complex coefficients of the Fourier-Bessel expansion.
         # Shape of C is (number of basis functions by number of z samples).
         # Note the matrix transpose to get the dimensions correct.
-        C, residuals, _, _ = torch.linalg.lstsq(J.T, phase.T)
+        C, _, _, _ = torch.linalg.lstsq(J.T, phase.T)
 
-        GridX,GridY = torch.meshgrid(torch.arange(self.size_x,device = self.device,dtype=torch.double),torch.arange(self.size_y,device = self.device,dtype=torch.double),indexing = 'ij')
+        GridX,GridY = torch.meshgrid(torch.arange(self.size_x,device = self.device,dtype=torch.double),\
+            torch.arange(self.size_y,device = self.device,dtype=torch.double),indexing = 'ij')
         r_pixel = torch.sqrt((GridX - x0) * (GridX - x0) + (GridY - y0) * (GridY - y0)) * self.res_lateral
 
         b = 2 * np. pi * r_pixel.reshape(r_pixel.shape[0],r_pixel.shape[1],1) * self.NA / self.wavelength
@@ -141,10 +148,12 @@ class Gibson_Lanni_psf(nn.Module):
         PSF = PSF_nonnorm/torch.max(PSF_nonnorm)
         
         return PSF
-    
+
+
     def make_param(self,x):
         return(torch.nn.parameter.Parameter(torch.tensor(x, dtype = torch.double,device = self.device,requires_grad = True)))
-    
+
+
 class Hanser_psf(nn.Module):
 
     #from the implementation of https://github.com/david-hoffman/pyOTF
@@ -168,8 +177,9 @@ class Hanser_psf(nn.Module):
     Phase Retrieval for High-Numerical-Aperture Optical Systems.
     Optics Letters 2003, 28 (10), 801.](dx.doi.org/10.1364/OL.28.000801)
     """
-    
-    def __init__(self, box_shape,xi0,xi1,xi2, device= 'cpu',NA=1.4, wavelength=0.610, ni=1.5, res_lateral=0.1,res_axial=0.25, num_zernike = 21, vec_corr="none", condition="sine",with_grad = True):
+
+    def __init__(self, box_shape,xi0,xi1,xi2, device= 'cpu',NA=1.4, wavelength=0.610, ni=1.5, res_lateral=0.1,
+                res_axial=0.25, num_zernike = 21, vec_corr="none", condition="sine",with_grad = True):
         """Generate a PSF object.
         wl=520, na=0.85, ni=1.0, res=130, zres=300
         Parameters
@@ -222,19 +232,15 @@ class Hanser_psf(nn.Module):
         self.xi0 = xi0
         self.xi1 = xi1
         self.xi2 = xi2
-        
+
         self.vec_corr = vec_corr
         self.condition = condition
-        
-        
 
         """zrange : array-like
         An alternate way to specify the z range for the calculation
         must be expressed in the same units as wavelength
         """
-        
-       
-        
+
     def forward(self):
         self._gen_zrange()
         self._gen_kr()
@@ -244,7 +250,9 @@ class Hanser_psf(nn.Module):
         # diffraction limit)
         r = kr *self.wavelength / self.NA
         with torch.no_grad():
-            zerns = torch.tensor(zernike(r.detach().cpu().numpy(), theta.detach().cpu().numpy(), *noll2degrees(np.arange(len(self.mcoefs.detach().cpu())) + 1)),dtype = torch.float,device = self.device)
+            zerns = torch.tensor(zernike(r.detach().cpu().numpy(), theta.detach().cpu().numpy(),
+                    *noll2degrees(np.arange(len(self.mcoefs.detach().cpu())) + 1)),
+                    dtype = torch.float,device = self.device)
 
 
         pupil_phase = (zerns * self.pcoefs[:, None, None]).sum(0)
@@ -254,12 +262,13 @@ class Hanser_psf(nn.Module):
         pupil_total = (torch.abs(self._gen_pupil()) + pupil_mag) * torch.exp(1j * pupil_phase)
         # generate the PSF, assign to attribute
         PSFa = self._gen_psf(pupil_total).permute(0,2,3,1)
-        
+
         return (torch.abs(PSFa[0])**2).contiguous()
-    
+
+
     def make_param(self,x):
         return(torch.nn.parameter.Parameter(torch.tensor(x, dtype = torch.float,requires_grad = self.with_grad,device = self.device)))
-    
+
     
     def _gen_zrange(self):
         """Generate the zrange from size_z and res_axial."""
@@ -268,9 +277,6 @@ class Hanser_psf(nn.Module):
 
     def _gen_kr(self):
         """Generate coordinate system and other internal parameters."""
-        #k = self._k = torch.fft.fftfreq(self.size, self.res.item())
-        #kxx, kyy = torch.meshgrid(k, k,indexing = 'ij')
-        #print(kxx)
         kx = torch.fft.fftfreq(self.size_x,dtype = torch.float, device = self.device)
         ky = torch.fft.fftfreq(self.size_y,dtype = torch.float, device = self.device)
         self._kx = kx/self.res_lateral
@@ -279,7 +285,7 @@ class Hanser_psf(nn.Module):
         """Convert from cartesian to polar coordinates."""
         self._phi = torch.atan2(kyy, kxx)
         kr = torch.sqrt(kyy**2 + kxx**2)
-        
+
         self._kr = kr/self.res_lateral
         # kmag is the radius of the spherical shell of the OTF
         self._kmag = self.ni / self.wavelength
@@ -287,6 +293,7 @@ class Hanser_psf(nn.Module):
         # a kz value for any pair of kx and ky values
         """Take the positive square root, negative values will be set to zero."""
         self._kz = torch.sqrt(torch.nn.functional.relu(self._kmag**2 - self._kr**2))
+
 
     def _gen_pupil(self):
         """Generate an ideal pupil."""
@@ -299,10 +306,12 @@ class Hanser_psf(nn.Module):
         # objective make sure data is complex
         return (kr <= diff_limit).type(torch.complex64)
 
+
     def _calc_defocus(self):
         """Calculate the defocus to apply to the base pupil."""
         kz = self._kz
         return torch.exp(2 * np.pi * 1j * kz * (self.zrange.unsqueeze(1).unsqueeze(2)))
+
 
     def _gen_psf(self, pupil_base=None):
         """Generate the PSF.
@@ -346,22 +355,19 @@ class Hanser_psf(nn.Module):
                 raise RuntimeError("You should never see this")
             pupil *= a
         # apply the vectorial corrections, if requested
-        
+
         # if no correction we still need one more axis for the following
         # code to work generally
         pupils = pupil.unsqueeze(0)
-        # save the pupil for inspection, not necessary
-        # self._pupils = pupils
-        # because the internal state is created with fftfreq, no initial shift
-        # is necessary.
         PSFa = torch.fft.fftshift(torch.fft.ifftn(pupils, dim=(2, 3)), dim=(2, 3))
         # save the PSF internally
         return PSFa
-    
+
+
     def otfi(self,PSFi):
         """Intensity OTF, complex array."""
         otfi =  torch.fft.fftshift(torch.fft.fftn(torch.fft.ifftshift(PSFi)))
-        return(otfi)
+        return otfi
 
 
 def _radial_zernike(r, n, m):
@@ -385,6 +391,7 @@ def _radial_zernike(r, n, m):
     rad_zern[valid_points] = (-1) ** coef2 * rprime**m * jacobi
     return rad_zern
 
+
 def _ingest_index(j):
     """Convert inputs to arrays and do type and validity checking."""
     j = np.asarray(j)
@@ -405,7 +412,6 @@ def noll2degrees(j: int) -> Tuple[int, int]:
     Source: (https://en.wikipedia.org/wiki/Zernike_polynomials)
     https://github.com/rdoelman/ZernikePolynomials.jl/blob/2825846679607f7bf335fdb9edd3b7145d65082b/src/ZernikePolynomials.jl
     """
-    #j = _ingest_index(j)
 
     n = (np.ceil((-3 + np.sqrt(1 + 8 * j)) / 2)).astype(int)
     jr = j - (n * (n + 1) / 2).astype(int)
@@ -445,7 +451,6 @@ def noll2degrees(j: int) -> Tuple[int, int]:
     m[~idx1] = m2[~idx1]
 
     return n, m
-
 
 
 def zernike(r: float, theta: float, n: int, m: int, norm: bool = True) -> float:
@@ -565,10 +570,11 @@ class Gaussian_psf(nn.Module):
         x = torch.linspace(-box_size[0]/2,box_size[0]/2,box_shape[0],dtype = dtype,device = device)
         y = torch.linspace(-box_size[1]/2,box_size[1]/2,box_shape[1],dtype = dtype,device = device)
         z = torch.linspace(-box_size[2]/2,box_size[2]/2,box_shape[2],dtype = dtype,device = device)
+        #print('x: ', x, x.shape)
         self.Gridxi0, self.Gridxi1, self.Gridxi2 = torch.meshgrid(x,y,z,indexing = 'ij')
         self.sigma = self.make_param(np.identity(3)*sigma)
-        
-        
+
+
     def forward(self):
         ems = torch.exp(-(self.Gridxi0*(self.sigma[0,0]*self.Gridxi0+self.sigma[0,1]*self.Gridxi1+self.sigma[0,2]*self.Gridxi2) 
                           + self.Gridxi1*(self.sigma[1,0]*self.Gridxi0+self.sigma[1,1]*self.Gridxi1+self.sigma[1,2]*self.Gridxi2)
@@ -576,9 +582,9 @@ class Gaussian_psf(nn.Module):
         
         return ems.contiguous()
 
+
     def make_param(self,x):
         return(torch.nn.parameter.Parameter(torch.tensor(x, dtype = self.dtype,requires_grad = self.with_grad,device = self.device)))
-
 
 
 class Gaussian_psf_logsigma(nn.Module):
@@ -605,13 +611,15 @@ class Gaussian_psf_logsigma(nn.Module):
         z = torch.linspace(-box_size[2]/2,box_size[2]/2,box_shape[2],device = device)
         self.Gridxi0, self.Gridxi1, self.Gridxi2 = torch.meshgrid(x,y,z,indexing = 'ij')
         self.logsigma = self.make_param(np.identity(3)*np.log(sigma))
-        
+
+
     def forward(self):
         self.sigma = torch.exp(self.logsigma)
         ems = torch.exp(-(self.Gridxi0*(self.sigma[0,0]*self.Gridxi0+self.sigma[0,1]*self.Gridxi1+self.sigma[0,2]*self.Gridxi2) 
                           + self.Gridxi1*(self.sigma[1,0]*self.Gridxi0+self.sigma[1,1]*self.Gridxi1+self.sigma[1,2]*self.Gridxi2)
                           + self.Gridxi2*(self.sigma[2,0]*self.Gridxi0+self.sigma[2,1]*self.Gridxi1+self.sigma[2,2]*self.Gridxi2))/2)
         return ems.contiguous()
+
 
     def make_param(self,x):
         return(torch.nn.parameter.Parameter(torch.tensor(x, dtype = self.dtype,requires_grad = self.with_grad,device = self.device)))
@@ -643,13 +651,15 @@ class Anisotropic_gaussian_psf(nn.Module):
         self.sigma = self.make_param(np.identity(2)*sigma)
         self.sigma_z = self.make_param(sigma_z)
         self.eps = self.make_param(eps)
-        
+
+
     def forward(self):
         ems = (torch.exp(-( self.Gridxi0*(self.sigma[0,0]*self.Gridxi0+self.sigma[0,1]*self.Gridxi1)
                            +self.Gridxi1*(self.sigma[1,0]*self.Gridxi0+self.sigma[1,1]*self.Gridxi1))/(2*(self.eps+(torch.abs(self.Gridxi2)*self.sigma_z)**2)))
         / ((self.eps+(torch.abs(self.Gridxi2)*self.sigma_z)**2)))
-    
+
         return ems.contiguous()
+
 
     def make_param(self,x):
         return(torch.nn.parameter.Parameter(torch.tensor(x, dtype = self.dtype,requires_grad = self.with_grad,device = self.device)))

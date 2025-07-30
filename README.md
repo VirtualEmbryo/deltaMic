@@ -1,10 +1,10 @@
-# deltaMic
+# *deltaMic*: differentiable Microscopy image creator
 [![License:
  CC BY-SA](https://img.shields.io/badge/License-CC%20BY--SA-lightgrey.svg)](https://creativecommons.org/licenses/by-sa/4.0/)
  
 📄 Accepted at [ICCV 2025](https://iccv.thecvf.com)
 
-**deltaMic** is a PyTorch-based Python library for physically grounded cell shape inference from 3D fluorescence microscopy images. It formulates segmentation as an inverse problem, optimizing a deformable triangle mesh so that its synthetic fluorescence rendering matches the observed image.
+***deltaMic*** is a PyTorch-based Python library for physically grounded cell shape inference from 3D fluorescence microscopy images. It formulates segmentation as an inverse problem, optimizing a deformable triangle mesh so that its synthetic fluorescence rendering matches the observed image.
 
 <p align="center">
 <img src="deltamic.png" alt="drawing" style="background-color: transparent;" width="900"/>

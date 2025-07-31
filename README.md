@@ -2,13 +2,16 @@
 [![License:
  CC BY-SA](https://img.shields.io/badge/License-CC%20BY--SA-lightgrey.svg)](https://creativecommons.org/licenses/by-sa/4.0/)
  
-📄 Accepted at [ICCV 2025](https://iccv.thecvf.com)
+📄 Accepted at [ICCV 2025](https://iccv.thecvf.com) - To read the paper on [arXiv](https://arxiv.org/html/2303.10440v2)
 
 ***deltaMic*** is a PyTorch-based Python library for physically grounded cell shape inference from 3D fluorescence microscopy images. It formulates segmentation as an inverse problem, optimizing a deformable triangle mesh so that its synthetic fluorescence rendering matches the observed image.
 
 <p align="center">
 <img src="deltamic.png" alt="drawing" style="background-color: transparent;" width="900"/>
 </p>
+
+It was developed by S. Ichbiah during his PhD in [Turlier Lab](https://www.turlierlab.com), based on an original idea of F. Delbary to generate synthetic fluorescence microscopy images from triangle meshes, and was further developed by A. Sinha during his PhD thesis. 
+For support, please open an issue.
 
 This library combines:
 

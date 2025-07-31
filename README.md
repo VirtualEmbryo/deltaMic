@@ -1,6 +1,8 @@
 # *deltaMic*: differentiable Microscopy image creator
 [![License:
  CC BY-SA](https://img.shields.io/badge/License-CC%20BY--SA-lightgrey.svg)](https://creativecommons.org/licenses/by-sa/4.0/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.16623962.svg)](https://doi.org/10.5281/zenodo.16623962)
+
  
 📄 Accepted at [ICCV 2025](https://iccv.thecvf.com) - To read the paper on [arXiv](https://arxiv.org/html/2303.10440v2)
 

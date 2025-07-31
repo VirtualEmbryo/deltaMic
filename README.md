@@ -81,7 +81,7 @@ python setup.py install
   
 - Batch execution:
   ```bash
-     bash run_batch.sh
+  bash run_batch.sh
   ```   
   Runs multiple deltaMic experiments with user-defined arguments, useful for dataset-wide evaluation.
 
